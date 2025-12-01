@@ -25,8 +25,13 @@ int main(int argc, char *argv[]) {
     
     
 
-    void *ptr1 = mm_malloc(100);
-    printf("ptr1: %p - aligned: %d\n", ptr1, ((size_t)ptr1 % 40) == 0);
+    void *ptr1 = mm_malloc(1);
+    void *ptr2 = mm_malloc(41);
+    void *ptr3 = mm_malloc(100);
+    
+    printf("ptr1: %p - mod 40 = %zu\n", ptr1, (size_t)ptr1 % 40);
+    printf("ptr2: %p - mod 40 = %zu\n", ptr2, (size_t)ptr2 % 40);
+    printf("ptr3: %p - mod 40 = %zu\n", ptr3, (size_t)ptr3 % 40);
 
    
 

@@ -8,6 +8,7 @@
 
 uint8_t *global_heap_pointer;
 size_t global_heap_size; 
+uint8_t global_pattern[5];
 
 struct block{  //struct to segment the heap into blocks allowing us to track what space is available and what space is and isn't free.
     size_t block_size;  //size of block
@@ -19,29 +20,33 @@ struct block{  //struct to segment the heap into blocks allowing us to track wha
 
 // Function to align size to the nearest multiple of ALIGNMENT
 static size_t align_size(size_t size);
+static void fill_pattern(void *ptr, size_t len);
 
 
 int mm_init(uint8_t *heap, size_t heap_size) {  //parameters are pointer to heap and size of the heap.
-   printf("block header size: %zu\n", sizeof(struct block));
+   
    if (heap == NULL) {     //if allocation didn't work return -1
        return -1;
    }
-    else {   //if allocation worked save heap pointer and heap size as global variables so it can be accessed by mm_malloc
-        size_t offset = (40 - ((size_t)heap % 40)) % 40;
-        uint8_t *aligned_heap = heap + offset;
-        global_heap_pointer = aligned_heap;
-        global_heap_size = heap_size - offset;
-        global_heap_size = (global_heap_size / 40) * 40;
-        if (global_heap_size < sizeof(struct block) + 40) {
+   for (size_t i = 0; i<5; i++) {
+         global_pattern[i] = heap[i];
+   }
+     //if allocation worked save heap pointer and heap size as global variables so it can be accessed by mm_malloc
+   size_t offset = (40 - ((size_t)heap % 40)) % 40;
+   uint8_t *aligned_heap = heap + offset;
+   global_heap_pointer = aligned_heap;
+   global_heap_size = heap_size - offset;
+   global_heap_size = (global_heap_size / 40) * 40;
+   if (global_heap_size < sizeof(struct block) + 40) {
             return -1;
-        }
+   }
 
-        struct block *header = (struct block *)global_heap_pointer; //make a header pointer for the first block of the heap
-        header->is_free = 1; //set header as free to true
-        header->block_size = global_heap_size - sizeof(struct block); //the size of the header is the current heap_size - size of the block
+   struct block *header = (struct block *)global_heap_pointer; //make a header pointer for the first block of the heap
+   header->is_free = 1; //set header as free to true
+   header->block_size = global_heap_size - sizeof(struct block); //the size of the header is the current heap_size - size of the block
         
-        return 0;
-    }
+   return 0;
+    
    
 }
 
@@ -64,7 +69,7 @@ void *mm_malloc(size_t size) {
         uint8_t *temp2 = (uint8_t*)header;
         temp2 += sizeof(struct block) + aligned_size;
         struct block *new_header = (struct block*) temp2;
-        new_header->block_size = old_block_size - size - sizeof(struct block);
+        new_header->block_size = old_block_size - aligned_size - sizeof(struct block);
         new_header->is_free = 1;
        }
        header->is_free = 0;
@@ -106,6 +111,7 @@ void mm_free(void *ptr) {
             while ((uint8_t *)curr_header + sizeof(struct block) <= heap_end) {
              if (curr_header == header) {
                header->is_free = 1;
+               
                uint8_t *temp1 = (uint8_t *)header;
                temp1 += header->block_size + sizeof(struct block);
                nxt_header = (struct block*) temp1;
@@ -117,10 +123,13 @@ void mm_free(void *ptr) {
                }
                if (prev_header != NULL && prev_header->is_free == 1) {
                 prev_header->block_size += header->block_size + sizeof(struct block);
-                prev_header->is_free = 1;
-                header = prev_header;
+                fill_pattern((void *)(prev_header + 1), prev_header->block_size);
+                return;
+               
                }
-               return; 
+               fill_pattern(ptr, header->block_size);
+               return;
+                
              }  
              else {
                prev_header = curr_header;
@@ -211,4 +220,11 @@ int mm_read(void *ptr, size_t offset, void *buf, size_t len) {
 
 static size_t align_size(size_t size) {
     return size % ALIGNMENT ? size + (ALIGNMENT - (size % ALIGNMENT)) : size;  
+}
+
+static void fill_pattern(void *ptr, size_t len) {
+    uint8_t *p = (uint8_t *)ptr;
+    for (size_t i = 0; i < len; i++) {
+        p[i] = global_pattern[i % 5];
+    }
 }

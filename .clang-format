@@ -1,0 +1,10 @@
+BasedOnStyle: Google
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+SortIncludes: CaseInsensitive
+SortUsingDeclarations: true
+
+ColumnLimit: 80
